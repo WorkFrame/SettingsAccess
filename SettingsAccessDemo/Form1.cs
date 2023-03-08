@@ -1,7 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
-
-using NetEti.ApplicationEnvironment;
+﻿using NetEti.ApplicationEnvironment;
 
 namespace NetEti.DemoApplications
 {
@@ -21,6 +18,8 @@ namespace NetEti.DemoApplications
         private void Form1_Load(object sender, EventArgs e)
         {
             this.listBox1.Items.Add(String.Format("{0}: {1}", "Harry", this._SettingsAccess.GetStringValue("Harry", "---")));
+            this.listBox1.Items.Add(String.Format("{0}: {1}", "Peter", this._SettingsAccess.GetStringValue("Peter", "---")));
+            this.listBox1.Items.Add(String.Format("{0}: {1}", "Eberhard", this._SettingsAccess.GetStringValue("Eberhard", "---")));
             this.listBox1.Items.Add(String.Format("{0}: {1}", "Noppes", this._SettingsAccess.GetStringValue("Noppes", "???")));
         }
     }

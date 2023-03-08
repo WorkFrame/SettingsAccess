@@ -1,7 +1,6 @@
-﻿using System;
-using System.Configuration;
-using NetEti.Globals;
-using System.Collections.Generic;
+﻿using NetEti.Globals;
+using NetEti.FileTools;
+using Microsoft.Extensions.Configuration;
 
 namespace NetEti.ApplicationEnvironment
 {
@@ -17,6 +16,10 @@ namespace NetEti.ApplicationEnvironment
     /// </remarks>
     public class SettingsAccess : IGetStringValue
     {
+        /// <summary>
+        /// Enthält alle aus der XmlDatei eingelesenen (Anwendungs-)Einstellungen.
+        /// </summary>
+        public Dictionary<string, string?>? Settings { get; private set; }
 
         #region IGetStringValue Members
 
@@ -27,19 +30,12 @@ namespace NetEti.ApplicationEnvironment
         /// <param name="key">Der Zugriffsschlüssel (string)</param>
         /// <param name="defaultValue">Das default-Ergebnis (string)</param>
         /// <returns>Der Ergebnis-String</returns>
-        public string GetStringValue(string key, string defaultValue)
+        public string? GetStringValue(string key, string? defaultValue)
         {
-            string rtn = null;
-            if (this._settingKeys.Contains(key))
+            string? rtn = defaultValue;
+            if (this.Settings != null && this.Settings.ContainsKey(key))
             {
-                try
-                {
-                    rtn = this._appSettingsReader.GetValue(key, typeof(string)).ToString();
-                }
-                catch (InvalidOperationException)
-                {
-                    rtn = defaultValue;
-                }
+                rtn = this.Settings[key];
             }
             return rtn;
         }
@@ -53,9 +49,9 @@ namespace NetEti.ApplicationEnvironment
         /// <param name="key">Der Zugriffsschlüssel (string)</param>
         /// <param name="defaultValues">Das default-Ergebnis (string[])</param>
         /// <returns>Das Ergebnis-String-Array</returns>
-        public string[] GetStringValues(string key, string[] defaultValues)
+        public string?[]? GetStringValues(string key, string?[]? defaultValues)
         {
-            string rtn = GetStringValue(key, null);
+            string? rtn = GetStringValue(key, null);
             if (rtn != null)
             {
                 return new string[] { rtn };
@@ -82,23 +78,98 @@ namespace NetEti.ApplicationEnvironment
         public SettingsAccess()
         {
             this.Description = "app.config";
-            this._appSettingsReader = new AppSettingsReader();
-            this._settingKeys = new List<string>();
-            foreach (var key in ConfigurationManager.AppSettings.Keys)
+            this.Settings = new Dictionary<string, string?>();
+
+            // Zuerst die AppSettings im klassischen Format verarbeiten
+            /*
+             *  <?xml version="1.0"?>
+             *  <configuration>
+             *      <appSettings>
+             *          <add key="Harry" value="Hirsch"/>
+             *      </appSettings>
+             *  </configuration>
+             */
+            System.Collections.Specialized.NameValueCollection settings1 = System.Configuration.ConfigurationManager.AppSettings;
+            if (settings1.Count > 0)
             {
-                this._settingKeys.Add(key.ToString());
+                foreach (string key in settings1.Keys)
+                {
+                    if (key != null)
+                    {
+                        this.Settings.Add(key, settings1[key]);
+                    }
+                }
             }
+
+            // Dann die AppSettings im .Net 7.0 Format verarbeiten
+            /* <?xml version="1.0" encoding="utf-8" ?>
+             *  <configuration>
+             *      <configSections>
+             *          <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
+             *              <section name="NetEti.DemoApplications.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
+             *          </sectionGroup>
+             *      </configSections>
+             *      <userSettings>
+             *          <NetEti.DemoApplications.Properties.Settings>
+             *              <setting name="Harry" serializeAs="String">
+             *                  <value>Hirsch</value>
+             *              </setting>
+             *          </NetEti.DemoApplications.Properties.Settings>
+             *      </userSettings>
+             *  </configuration>
+             */
+            string configPath = "";
+            string? appName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+            if (appName != null)
+            {
+                configPath = String.Format($"{appName}.dll.config");
+                if (!File.Exists(configPath))
+                {
+                    configPath = String.Format($"{appName}.exe.config");
+                }
+                if (File.Exists(configPath))
+                {
+                    XmlAccess? xmlAccessor = new XmlAccess(configPath);
+                    Dictionary<string, string?>? settings2 = xmlAccessor?.Settings;
+                    if (settings2?.Count > 0)
+                    {
+                        foreach (string key in settings2.Keys)
+                        {
+                            if (!this.Settings.ContainsKey(key))
+                            {
+                                this.Settings.Add(key, settings2[key]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Zuletzt noch die AppSettings aus einer möglichen app.settings.json verarbeiten
+            /*
+             *  {
+             *      "Butzemann": "Biber",
+             *      "Eberhard": "Schwein",
+             *      "Pierre": "Robbe"
+             *  }
+             */
+            configPath = "appsettings.json";
+            if (File.Exists(configPath))
+            {
+                var configuration = new ConfigurationBuilder().AddJsonFile(configPath);
+                var config = configuration.Build();
+                IEnumerable<IConfigurationSection> children = config.GetChildren();
+                foreach (var child in children)
+                {
+                    if (!this.Settings.ContainsKey(child.Key))
+                    {
+                        this.Settings.Add(child.Key, child.Value);
+                    }
+                }
+            }
+
         }
 
         #endregion public members
-
-        #region private members
-
-        private System.Configuration.AppSettingsReader _appSettingsReader;
-
-        private List<string> _settingKeys;
-
-        #endregion private members
 
     }
 }
