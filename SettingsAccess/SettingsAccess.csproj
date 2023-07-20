@@ -12,8 +12,8 @@
     <Company>NetEti</Company>
     <Description>Assembly für den Zugriff auf die .Net AppSettings</Description>
     <Copyright>Copyright © $(Authors) 2012-2023</Copyright>
-    <AssemblyVersion>7.0.1.0</AssemblyVersion>
-    <FileVersion>7.0.1.0</FileVersion>
+    <AssemblyVersion>7.0.1.1</AssemblyVersion>
+    <FileVersion>7.0.1.1</FileVersion>
     <PackageTags>NetEti Framework Settings</PackageTags>
   </PropertyGroup>
 
@@ -23,7 +23,7 @@
   <Import Project="$(ProjectDir)../../AddOn/proj/*" Condition="exists('$(ProjectDir)../../AddOn/proj')" />
 
   <ItemGroup>
- 		<PackageReference Include="System.Management" Version="7.0.0" />
+ 		<PackageReference Include="System.Management" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
