@@ -77,7 +77,8 @@ namespace NetEti.ApplicationEnvironment
         /// </summary>
         public SettingsAccess()
         {
-            this.Description = "app.config";
+            this.Description = "Settings";
+            string delimiter = ": ";
             this.Settings = new Dictionary<string, string?>();
 
             // Zuerst die AppSettings im klassischen Format verarbeiten
@@ -92,6 +93,8 @@ namespace NetEti.ApplicationEnvironment
             System.Collections.Specialized.NameValueCollection settings1 = System.Configuration.ConfigurationManager.AppSettings;
             if (settings1.Count > 0)
             {
+                this.Description += String.Format($"{delimiter}app");
+                delimiter = "+";
                 foreach (string key in settings1.Keys)
                 {
                     if (key != null)
@@ -118,7 +121,7 @@ namespace NetEti.ApplicationEnvironment
              *      </userSettings>
              *  </configuration>
              */
-            string configPath = "";
+            string configPath;
             string? appName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
             if (appName != null)
             {
@@ -129,6 +132,8 @@ namespace NetEti.ApplicationEnvironment
                 }
                 if (File.Exists(configPath))
                 {
+                    this.Description += String.Format($"{delimiter}{Path.GetFileName(configPath)}");
+                    delimiter = "+";
                     XmlAccess? xmlAccessor = new XmlAccess(configPath);
                     Dictionary<string, string?>? settings2 = xmlAccessor?.Settings;
                     if (settings2?.Count > 0)
@@ -155,6 +160,7 @@ namespace NetEti.ApplicationEnvironment
             configPath = "appsettings.json";
             if (File.Exists(configPath))
             {
+                this.Description += String.Format($"{delimiter}{Path.GetFileName(configPath)}");
                 var configuration = new ConfigurationBuilder().AddJsonFile(configPath);
                 var config = configuration.Build();
                 IEnumerable<IConfigurationSection> children = config.GetChildren();

@@ -5,5 +5,11 @@
     <Setting Name="Harry" Type="System.String" Scope="User">
       <Value Profile="(Default)">Hirsch</Value>
     </Setting>
+    <Setting Name="Peter" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Pan</Value>
+    </Setting>
+    <Setting Name="Claire" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Grube</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
