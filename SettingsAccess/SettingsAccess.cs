@@ -1,6 +1,8 @@
 ﻿using NetEti.Globals;
 using NetEti.FileTools;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
+using NetEti.ObjectSerializer;
 
 namespace NetEti.ApplicationEnvironment
 {
@@ -134,21 +136,44 @@ namespace NetEti.ApplicationEnvironment
                 {
                     this.Description += String.Format($"{delimiter}{Path.GetFileName(configPath)}");
                     delimiter = "+";
-                    XmlAccess? xmlAccessor = new XmlAccess(configPath);
-                    Dictionary<string, string?>? settings2 = xmlAccessor?.Settings;
-                    if (settings2?.Count > 0)
+
+                    string jsonOrXml = File.ReadAllText(configPath);
+                    if (jsonOrXml.Trim().StartsWith('{') || jsonOrXml.Trim().StartsWith('['))
                     {
-                        foreach (string key in settings2.Keys)
+                        Dictionary<string, object>? dict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonOrXml);
+                        if (dict != null)
                         {
-                            if (!this.Settings.ContainsKey(key))
+                            foreach (KeyValuePair<string, object> kvp in dict)
                             {
-                                this.Settings.Add(key, settings2[key]);
+                                this.Settings.Add(kvp.Key, kvp.Value.ToString());
                             }
+                        }
+                    }
+                    else
+                    {
+                        if (jsonOrXml.Trim().StartsWith('<'))
+                        {
+                            FrameworkConfiguration? frameworkConfiguration
+                                = SerializationUtility.DeserializeFromXml<FrameworkConfiguration>(jsonOrXml);
+                            if (frameworkConfiguration?.ConfigAppSettings?.Add != null)
+                            {
+                                foreach (FrameworkConfigAppSettingEntry entry in frameworkConfiguration.ConfigAppSettings.Add)
+                                {
+                                    if (entry.Key != null)
+                                    {
+                                        this.Settings.Add(entry.Key, entry.Value);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                "Der Parameter 'jsonOrXml' hat kein bekanntes Format. Unterstützt werden Xml und Json.");
                         }
                     }
                 }
             }
-
             // Zuletzt noch die AppSettings aus einer möglichen app.settings.json verarbeiten
             /*
              *  {
